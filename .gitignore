@@ -1,0 +1,43 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+
+# Python environments and caches
+.venv/
+.venv*/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Generated transcripts/articles
+*.md
+!README.md
+article_*.md
+local_transcripts/
+asr_cache/
+*_clean.md
+
+# Logs and process files
+*.log
+*.pid
+
+# Downloaded media
+*.mp4
+*.m4a
+*.mp3
+*.wav
+*.mkv
+*.mov
+*.webm
+*.flv
+*.aac
+*.part
+
+# OS/editor files
+.DS_Store
+.idea/
+.vscode/

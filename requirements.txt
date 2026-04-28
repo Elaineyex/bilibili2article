@@ -1,0 +1,8 @@
+# Recommended: install these in a Python 3.12 virtualenv.
+bilibili-api-python==17.4.1
+faster-whisper
+httpx==0.28.1
+python-dotenv==1.2.1
+qrcode==8.2
+qrcode-terminal==0.8
+yt-dlp==2026.2.4
