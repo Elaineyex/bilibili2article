@@ -2,7 +2,6 @@ import asyncio
 import os
 import re
 import sys
-import tempfile
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -229,7 +228,7 @@ def get_cache_dir() -> Path:
     configured = os.getenv("BILI_ASR_CACHE_DIR")
     if configured:
         return Path(configured).expanduser()
-    return Path(tempfile.gettempdir()) / "bili2article_asr_cache"
+    return Path.cwd()
 
 
 def stream_extension(stream: Any) -> str:
