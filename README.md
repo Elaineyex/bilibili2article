@@ -12,6 +12,7 @@
 - 支持多 P 视频，URL 带 `?p=2` 时只处理指定分 P。
 - 支持批量转写本地视频文件夹。
 - 输出 Markdown 文件，便于继续整理成文章或笔记。
+- 实验性支持 Douyin 视频转写（`convert_douyin.py`，基于 `yt-dlp` + 本地 ASR，无官方字幕）。
 
 ## 设计说明
 
@@ -79,6 +80,30 @@ python convert.py "https://www.bilibili.com/video/<BV_ID>/?p=2"
 
 ```bash
 python convert.py "BV1hvSKB4EgK"
+```
+
+## 转写 Douyin 视频（实验性）
+
+与 Bilibili 不同，Douyin 没有稳定、公开的官方字幕接口，且 Web 端接口有反爬校验。目前只能：用 `yt-dlp` 解析视频直链 → 下载媒体 → 走本地 `faster-whisper` ASR（复用 `convert.py` 里的转写逻辑）。反爬校验偶尔会间歇性失败，脚本内置了重试。
+
+```bash
+source .venv312/bin/activate
+python convert_douyin.py "https://v.douyin.com/xxxxxxxx/"
+```
+
+不传 `--cookies` / `--cookies-from-browser` 时，脚本按以下顺序选取 cookie 来源：`--cookies` 参数 → `DOUYIN_COOKIES_FILE` 环境变量 → 当前目录下的 `douyin_cookies.txt` → **默认回退到 `--cookies-from-browser chrome`**（直接从本机 Chrome 读取实时 cookie）。
+
+**为什么默认是读取 Chrome，而不是更小范围的 cookies.txt 文件？** 实测过两种方式：
+
+- **`--cookies <file>`**（从浏览器 DevTools 手动导出一份 cookie 快照到文件）：作用域小、可审计、删文件即可撤销，但**在 Douyin 上不可靠**——它依赖的 `msToken` 是页面 JS 在标签页保持打开时持续轮换生成的动态令牌，任何时间点导出的静态文件都不包含它，之后请求会被反爬校验拒绝。这不是能靠"重新导出"解决的问题。
+- **`--cookies-from-browser chrome`**：直接读取 Chrome 当前活跃的 cookie 存储，因此天然包含实时轮换的 `msToken`，实测能稳定工作。代价是 macOS 会弹出 "Chrome Safe Storage" 钥匙串授权；选择"始终允许"会让请求进程可以静默解密 Chrome 里**所有网站**的 cookie，不只是 douyin.com（见下方 FAQ）。
+
+`--cookies` 仍然保留（见 `--help`），如果你只是想验证某个域名 cookie 是否够用，或者以后换一个反爬没有依赖轮换令牌的站点，它依然有用；但对当前的 Douyin 不要指望它稳定工作。
+
+输出文件：
+
+```text
+article_douyin_<video_id>.md
 ```
 
 ## 本地 ASR 参数
@@ -181,7 +206,13 @@ BILI_ASR_MODEL=tiny python convert.py "<bilibili-url>"
 
 模型越小速度越快，但准确率可能下降。
 
-## 3. 输出与隐私
+### 3. `--cookies-from-browser chrome` 会不会一直悄悄读我的 Chrome cookie？
+
+如果在 macOS 的 "Chrome Safe Storage" 钥匙串授权弹窗里选择"始终允许"，会——之后任何匹配该签名的进程都能在不再提示的情况下解密 Chrome 里所有网站的 cookie，不只是 douyin.com。如果只想授权一次，选"允许"而不是"始终允许"，下次运行会再次弹窗询问。
+
+更小范围的替代方案是导出一份 `douyin_cookies.txt`（`douyin_cookies_from_devtools.py` 可以把 DevTools 里手动复制的 cookie 表转成这个格式，作用域仅限一个域名，删文件即可撤销）。但实测这个方式对 Douyin **不可靠**：反爬校验依赖的 `msToken` 是标签页保持打开时 JS 持续轮换生成的，静态导出的文件天然缺这个值，所以脚本默认还是回退到 `--cookies-from-browser`。
+
+## 4. 输出与隐私
 
 - `.env` 保存登录 cookie，已被 git 忽略。
 - `local_transcripts/`、`article_*.md`、视频缓存和日志文件默认不提交。

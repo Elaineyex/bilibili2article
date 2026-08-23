@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+*cookies*.txt
 
 # Python environments and caches
 .venv/
@@ -16,6 +17,7 @@ __pycache__/
 # Generated transcripts/articles
 *.md
 !README.md
+!CLAUDE.md
 article_*.md
 local_transcripts/
 asr_cache/
